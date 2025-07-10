@@ -215,8 +215,8 @@
 
 Запрос в БД сообщил, что статус моего подтвеждения mpps = 1, что означает успешную проверку.
 
-<details>
-  <summary>Показать вывод заппроса</summary>
+    <details>
+    <summary>Показать вывод запроса</summary>
 
         ```sql
         pk   | patient_fk | drcode_fk |                            mpps_iuid                             |      pps_start      | station_aet | modality | accession_no | mpps_status |      created_time       |      updated_time       |                                                                                                                                                                                                                                                                                                                                                           mpps_attrs                                                                                                                                                                                                                                                                                                                                                           
@@ -250,74 +250,72 @@
 
 Пример: ✅ Статус MPPS: COMPLETED (код 1)
 
-
-
 Код для mpps_value_check.py
 
 <details>
   <summary>Показать код mpps_value_check.py</summary>
 
-```python
-import paramiko
-import getpass
-import time
-import re
+    ```python
+    import paramiko
+    import getpass
+    import time
+    import re
 
-# Данные подключения
-host = "YOUR_IP"
-port = 22
-username = input("Введите имя пользователя SSH: ")
-password = getpass.getpass("Введите пароль SSH: ")
+    # Данные подключения
+    host = "YOUR_IP"
+    port = 22
+    username = input("Введите имя пользователя SSH: ")
+    password = getpass.getpass("Введите пароль SSH: ")
 
-# Получаем значение mpps_iuid от пользователя
-mpps_iuid = input("Введите значение mpps_iuid: ")
+    # Получаем значение mpps_iuid от пользователя
+    mpps_iuid = input("Введите значение mpps_iuid: ")
 
-# SQL-запрос (только статус)
-sql_query = f"psql -d pacsdb -t -A -F',' -c \"SELECT mpps_status FROM mpps WHERE mpps_iuid = '{mpps_iuid}';\""
+    # SQL-запрос (только статус)
+    sql_query = f"psql -d pacsdb -t -A -F',' -c \"SELECT mpps_status FROM mpps WHERE mpps_iuid = '{mpps_iuid}';\""
 
-# Отображение числового статуса
-status_map = {"0": "IN PROGRESS", "1": "COMPLETED", "2": "DISCONTINUED"}
+    # Отображение числового статуса
+    status_map = {"0": "IN PROGRESS", "1": "COMPLETED", "2": "DISCONTINUED"}
 
-try:
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(hostname=host, port=port, username=username, password=password)
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(hostname=host, port=port, username=username, password=password)
 
-    channel = client.invoke_shell()
-    time.sleep(1)
+        channel = client.invoke_shell()
+        time.sleep(1)
 
-    # Повышение до postgres
-    channel.send("sudo -i -u postgres\n")
-    time.sleep(1)
+        # Повышение до postgres
+        channel.send("sudo -i -u postgres\n")
+        time.sleep(1)
 
-    if channel.recv_ready():
-        recv = channel.recv(1024).decode("utf-8")
-        if f"[sudo] password for {username}" in recv:
-            sudo_password = getpass.getpass("Введите пароль для sudo: ")
-            channel.send(sudo_password + "\n")
-            time.sleep(1)
+        if channel.recv_ready():
+            recv = channel.recv(1024).decode("utf-8")
+            if f"[sudo] password for {username}" in recv:
+                sudo_password = getpass.getpass("Введите пароль для sudo: ")
+                channel.send(sudo_password + "\n")
+                time.sleep(1)
 
-    # Выполнение SQL-запроса
-    channel.send(sql_query + "\n")
-    time.sleep(2)
+        # Выполнение SQL-запроса
+        channel.send(sql_query + "\n")
+        time.sleep(2)
 
-    result = ""
-    while channel.recv_ready():
-        result += channel.recv(4096).decode("utf-8")
-        time.sleep(0.3)
+        result = ""
+        while channel.recv_ready():
+            result += channel.recv(4096).decode("utf-8")
+            time.sleep(0.3)
 
-    # Парсинг статуса
-    match = re.search(r"^\s*(\d+)", result, re.MULTILINE)
-    if match:
-        status_code = match.group(1)
-        status_text = status_map.get(status_code, f"Неизвестный статус: {status_code}")
-        print(f"\n✅ Статус MPPS: {status_text} (код {status_code})")
-    else:
-        print("\n⚠️ Статус MPPS не найден или пустой результат.")
+        # Парсинг статуса
+        match = re.search(r"^\s*(\d+)", result, re.MULTILINE)
+        if match:
+            status_code = match.group(1)
+            status_text = status_map.get(status_code, f"Неизвестный статус: {status_code}")
+            print(f"\n✅ Статус MPPS: {status_text} (код {status_code})")
+        else:
+            print("\n⚠️ Статус MPPS не найден или пустой результат.")
 
-    channel.close()
-    client.close()
+        channel.close()
+        client.close()
 
-except Exception as e:
-    print(f"❌ Ошибка: {e}")
-```
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+    ```
