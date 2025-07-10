@@ -249,11 +249,12 @@ pk   | patient_fk | drcode_fk |                            mpps_iuid            
 
 По окончанию отработки скрипт отдаст значение записанное в БД в виде:
 
+Пример: ✅ Статус MPPS: COMPLETED (код 1)
+
+Где:
 0 — IN PROGRESS
 1 — COMPLETED
 2 — DISCONTINUED
-
-Пример: ✅ Статус MPPS: COMPLETED (код 1)
 
 Код для mpps_value_check.py
 
